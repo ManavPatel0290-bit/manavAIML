@@ -1,0 +1,60 @@
+# train_model.py
+
+import yfinance as yf
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+from joblib import dump
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+# 1️⃣ Download Data
+symbol = 'RELIANCE.NS'
+start_date = '2024-01-01'
+end_date = datetime.today().strftime('%Y-%m-%d')
+
+data = yf.download(symbol, start=start_date, end=end_date)
+print(data.head())
+
+# 2️⃣ Prepare Target
+data['Target'] = np.where(data['Close'].shift(-1) > data['Close'], 1, 0)
+
+# Remove NaNs
+data = data.dropna()
+
+# 3️⃣ Create Features
+data['Open-Close'] = data['Open'] - data['Close']
+data['High-Low'] = data['High'] - data['Low']
+data['MA5'] = data['Close'].rolling(5).mean()
+
+data = data.dropna()
+
+# 4️⃣ Select X & y
+X = data[['Open-Close', 'High-Low', 'MA5']]
+y = data['Target']
+
+# 5️⃣ Train/Test Split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+
+# 6️⃣ Train Model
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# 7️⃣ Evaluate
+predictions = model.predict(X_test)
+
+print("\nAccuracy:", accuracy_score(y_test, predictions))
+print("\nClassification Report:\n", classification_report(y_test, predictions))
+
+# Optional: Plot
+plt.plot(y_test.values, label="Actual")
+plt.plot(predictions, label="Predicted")
+plt.title("Actual vs Predicted")
+plt.legend()
+plt.show()
+
+# 8️⃣ Save Model
+dump(model, 'stock_trend_model.joblib')
+print("\n✅ Model saved as stock_trend_model.joblib")
