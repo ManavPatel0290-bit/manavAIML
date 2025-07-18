@@ -1,3 +1,5 @@
+# app.py
+
 import streamlit as st
 from joblib import load
 import yfinance as yf
@@ -8,21 +10,19 @@ st.set_page_config(page_title="Live Stock Trend Predictor", page_icon="📈")
 
 st.title("📈 Live Stock Trend Predictor")
 
-# Load saved model
+# Load Model
 model = load('stock_trend_model.joblib')
 
-# Input: NSE Symbol
+# Stock Input
 symbol = st.text_input("Enter NSE stock symbol (e.g., RELIANCE.NS):", 'RELIANCE.NS')
 
 if st.button("Predict Trend"):
     with st.spinner("Fetching latest data..."):
-        # Download last 7 days data for MA5
         data = yf.download(symbol, period='7d')
-        
+
         if data.empty:
-            st.warning("Could not fetch data. Check your symbol.")
+            st.warning("No data found. Check symbol.")
         else:
-            # Create features
             data['Open-Close'] = data['Open'] - data['Close']
             data['High-Low'] = data['High'] - data['Low']
             data['MA5'] = data['Close'].rolling(5).mean()
@@ -40,4 +40,4 @@ if st.button("Predict Trend"):
                 trend = "📈 UP" if prediction == 1 else "📉 DOWN"
                 st.success(f"Predicted Trend for **{symbol}**: {trend}")
             else:
-                st.warning("Not enough data to calculate features. Try later.")
+                st.warning("Not enough data to calculate features.")
